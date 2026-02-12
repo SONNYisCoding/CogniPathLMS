@@ -6,7 +6,9 @@
 
 CogniPath is an innovative EdTech startup project designed to revolutionize how students master new subjects. By leveraging the power of Generative AI and Multi-agent systems, CogniPath creates dynamic, personalized learning roadmaps tailored to each user's unique goals and background.
 
-![alt text](image.png)
+<p align="center">
+  <img src="assets/image.png" width="1920" alt="CogniPath Logo">
+</p>
 
 ✨ Key Features
 AI-Generated Roadmaps: Instantly create structured learning paths for any topic using Gemini Pro 1.5.
@@ -74,3 +76,5 @@ Frontend: Built with Vite and served via Firebase Hosting.
 Minh Triet Nguyen Chapter Lead, GDGoC FPT University HCMC
 
 AI Student @ FPT University
+
+[def]: image.png

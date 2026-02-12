@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.py[cod]
+# Nếu bạn để file JSON quyền admin trong server, hãy ignore nó ngay!
+serviceAccountKey.json
