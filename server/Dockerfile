@@ -1,5 +1,5 @@
 # Use official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Set the working directory in the container
 WORKDIR /app
@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Cloud Run defines the PORT environment variable, default to 8080
-ENV PORT 8080
+ENV PORT=8080
 
 # Make port 8080 available to the world outside this container
 EXPOSE 8080
@@ -22,4 +22,7 @@ EXPOSE 8080
 # Run app.py when the container launches
 # CMD ["python", "run.py"]
 # Sử dụng Gunicorn để quản lý process tốt hơn trên Cloud Run
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 run:app
+# CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 run:app
+# Sửa lỗi JSONArgsRecommended bằng định dạng mảng
+# Lưu ý: Chúng ta dùng sh -c để biến $PORT vẫn được hiểu đúng
+CMD ["sh", "-c", "gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 run:app"]
