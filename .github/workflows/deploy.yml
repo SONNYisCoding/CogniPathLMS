@@ -1,0 +1,41 @@
+name: CogniPath Production Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Build Frontend
+        run: |
+          cd client
+          npm install
+          npm run build
+        #
+
+      - name: Deploy Backend to Cloud Run
+        run: |
+          gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend ./server
+          gcloud run deploy cognipath-backend \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend \
+            --platform managed --region asia-southeast1 --allow-unauthenticated \
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}
+        #
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.GCP_SA_KEY }}'
+          projectId: ${{ secrets.GCP_PROJECT_ID }}
+          channelId: live

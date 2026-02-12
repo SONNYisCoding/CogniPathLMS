@@ -1,0 +1,53 @@
+name: CogniPath Feature Preview
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Deploy Backend Preview
+        id: deploy-backend
+        run: |
+          PR_TAG="pr-${{ github.event.number }}"
+          gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend:$PR_TAG ./server
+          gcloud run deploy cognipath-backend --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend:$PR_TAG \
+            --platform managed --region asia-southeast1 --no-traffic --tag $PR_TAG \
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}
+          
+          URL=$(gcloud run services describe cognipath-backend --platform managed --region asia-southeast1 --format="value(status.traffic.filter(tag='$PR_TAG').url)")
+          echo "BACKEND_URL=$URL" >> $GITHUB_ENV
+        #
+
+      - name: Build & Deploy Frontend Preview
+        id: firebase_preview
+        run: |
+          cd client
+          npm install
+          VITE_API_URL=${{ env.BACKEND_URL }} npm run build
+        #
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.GCP_SA_KEY }}'
+          projectId: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Comment on PR
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            ## 🚀 CogniPath Preview Ready!
+            * **🌐 Frontend:** ${{ steps.firebase_preview.outputs.details_url }}
+            * **⚙️ Backend API:** ${{ env.BACKEND_URL }}

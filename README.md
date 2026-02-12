@@ -74,7 +74,7 @@ This project is optimized for the Google Cloud Ecosystem:
 **Frontend**: Built with Vite and served via Firebase Hosting.
 
 ## 👨‍💻 Author
-Minh Triet Nguyen Chapter Lead, GDGoC FPT University HCMC
+**Minh Triet Nguyen** Chapter Lead, GDGoC FPT University HCMC
 
 AI Student @ FPT University
 
