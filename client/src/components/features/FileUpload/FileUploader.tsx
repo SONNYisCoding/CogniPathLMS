@@ -1,15 +1,17 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileType, X, Loader2 } from 'lucide-react';
+import { Upload, FileType, X, Loader2, CheckCircle } from 'lucide-react';
 import useDrivePicker from 'react-google-drive-picker';
+import { useGoogleLogin } from '@react-oauth/google';
 import { GOOGLE_DRIVE_CONFIG } from '../../../config/google';
+import type { UploadedFile } from '../../../hooks/useUpload';
 
 interface FileUploaderProps {
     onFilesSelected: (files: File[]) => void;
     maxFiles?: number;
     accept?: Record<string, string[]>;
-    currentFiles?: File[];
-    onRemoveFile?: (file: File) => void;
+    currentFiles?: UploadedFile[];
+    onRemoveFile?: (fileId: string) => void;
     title?: string;
     description?: string;
     maxSize?: number;
@@ -83,7 +85,25 @@ const FileUploader = ({
         return new File([blob], finalFileName, { type: finalMimeType });
     };
 
-    const handleOpenPicker = () => {
+    // Use Google Identity Services for authentication
+    const loginToDrive = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            const token = tokenResponse.access_token;
+            console.log("OAuth Success. Token received:", token ? "Yes" : "No");
+
+            if (token) {
+                handleOpenPicker(token);
+            }
+        },
+        onError: error => {
+            console.error("OAuth Error:", error);
+            alert("Failed to authenticate with Google Drive.");
+        },
+        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
+        flow: 'implicit' // 'implicit' flow returns access_token directly
+    });
+
+    const handleOpenPicker = (accessToken: string) => {
         try {
             openPicker({
                 clientId: GOOGLE_DRIVE_CONFIG.clientId,
@@ -94,13 +114,11 @@ const FileUploader = ({
                 supportDrives: true,
                 appId: GOOGLE_DRIVE_CONFIG.appId,
                 viewMimeTypes: "application/pdf,application/vnd.google-apps.document,video/mp4,image/jpeg,image/png",
-                customScopes: ['https://www.googleapis.com/auth/drive.readonly'],
-                // explicit origin content for the picker
                 setOrigin: window.location.origin,
+                token: accessToken, // Pass the explicit token here
+                // validated scopes are handled by useGoogleLogin, but picker might need to know
+                // actually, if token is passed, it skips auth
                 callbackFunction: async (data) => {
-                    if (data.action === 'loaded') {
-                        // Picker loaded successfully
-                    }
                     if (data.action === 'cancel') {
                         setIsDownloading(false);
                     }
@@ -108,18 +126,20 @@ const FileUploader = ({
                         setIsDownloading(true);
                         try {
                             const newFiles: File[] = [];
-                            const token = (data as any).oauthToken;
+                            // When token is passed explicitly, data.oauthToken might be the same or we use our accessToken
+                            const tokenToUse = accessToken;
 
                             for (const doc of data.docs) {
                                 try {
-                                    const file = await downloadDriveFile(doc.id, token, doc.name, doc.mimeType);
+                                    const file = await downloadDriveFile(doc.id, tokenToUse, doc.name, doc.mimeType);
                                     newFiles.push(file);
                                 } catch (err: any) {
                                     console.error(`Error downloading ${doc.name}:`, err);
-                                    if (err.message && err.message.includes('Unauthorized')) {
-                                        alert("Session expired. Please try selecting the file again to re-authenticate.");
-                                        // Ideally, we could trigger a re-auth flow here if the picker supports it,
-                                        // or just let the user click the button again which gets a fresh token.
+                                    if (err.message && (err.message.includes('Unauthorized') || err.message.includes('No access token'))) {
+                                        // Only alert if it's a genuine auth error not caught earlier
+                                        alert("Session expired. Please try again.");
+                                    } else {
+                                        alert(`Failed to download ${doc.name}. See console for details.`);
                                     }
                                 }
                             }
@@ -138,7 +158,7 @@ const FileUploader = ({
         } catch (error) {
             console.error("Error opening Drive Picker:", error);
             if (error instanceof Error && error.message.includes('origin')) {
-                alert(`Configuration Error: The origin "${window.location.origin}" is not allowed. Please check your Google Cloud Console Authorized Javascript Origins.`);
+                alert(`Configuration Error: The origin "${window.location.origin}" is not allowed.`);
             }
         }
     };
@@ -147,10 +167,9 @@ const FileUploader = ({
         <div className="w-full space-y-4">
             {/* Action Buttons Area */}
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                {/* Google Drive Button */}
                 <button
                     type="button"
-                    onClick={handleOpenPicker}
+                    onClick={() => loginToDrive()}
                     disabled={isDownloading}
                     className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -217,27 +236,47 @@ const FileUploader = ({
                 <div className="space-y-2">
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Files ({currentFiles.length})</h4>
                     <div className="grid grid-cols-1 gap-2">
-                        {currentFiles.map((file, index) => (
+                        {currentFiles.map((fileObj) => (
                             <div
-                                key={`${file.name}-${index}`}
+                                key={fileObj.id}
                                 className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
                             >
-                                <div className="flex items-center space-x-3 overflow-hidden">
-                                    <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-500">
+                                <div className="flex items-center space-x-3 overflow-hidden flex-1">
+                                    <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 relative">
                                         <FileType size={20} />
+                                        {fileObj.status === 'uploading' && (
+                                            <div className="absolute inset-0 bg-white/50 dark:bg-black/50 flex items-center justify-center rounded">
+                                                <Loader2 size={14} className="animate-spin text-blue-600" />
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{file.name}</p>
-                                        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(0)} KB</p>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{fileObj.file.name}</p>
+                                            <span className="text-xs text-gray-500">
+                                                {fileObj.status === 'uploading'
+                                                    ? `${fileObj.progress}%`
+                                                    : <CheckCircle size={14} className="text-green-500" />
+                                                }
+                                            </span>
+                                        </div>
+                                        {/* Progress Bar */}
+                                        <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full transition-all duration-300 rounded-full ${fileObj.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
+                                                    }`}
+                                                style={{ width: `${fileObj.progress}%` }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 {onRemoveFile && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onRemoveFile(file);
+                                            onRemoveFile(fileObj.id);
                                         }}
-                                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 rounded transition-colors"
+                                        className="ml-3 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 rounded transition-colors"
                                     >
                                         <X size={18} />
                                     </button>

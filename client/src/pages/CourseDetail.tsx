@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, Info } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import FileUploader from '../components/features/FileUpload/FileUploader';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -13,7 +13,7 @@ const CourseDetail = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { generatePath, savePathToFirestore, loading: geminiLoading } = useGemini();
-    const { files, onDrop, removeFile } = useUpload(); // Using useUpload just for state management here
+    const { files, onDrop, removeFile } = useUpload();
 
     const state = location.state as { goal: string; level: string } | null;
 
@@ -25,7 +25,23 @@ const CourseDetail = () => {
 
     if (!state) return null;
 
+    // Logic for disabling the Generate button
+    // 1. Files empty? -> Initial state, maybe we allow generating without files? 
+    //    User request says: "Nút phải ở trạng thái disabled khi chưa có bất kỳ tệp nào được chọn."
+    //    Wait, usually adding context is optional. But if the user request explicitely wants it disabled if empty:
+    //    "Trạng thái khởi tạo: Nút phải ở trạng thái disabled khi chưa có bất kỳ tệp nào được chọn."
+    //    This suggests adding context is now mandatory for this specific flow or the user wants it that way.
+    //    Let's follow the user instruction strictly.
+    // 2. Any file uploading?
+
+    // User Requirement: "Button disabled if empty OR any file uploading"
+    const isUploading = files.some(f => f.status === 'uploading');
+    const hasFiles = files.length > 0;
+    const isGenerateDisabled = !hasFiles || isUploading;
+
     const handleGenerate = async () => {
+        if (isGenerateDisabled) return;
+
         // Mock user profile if not logged in
         const userProfile = user || {
             uid: 'anonymous',
@@ -39,7 +55,7 @@ const CourseDetail = () => {
             topic: state.goal,
             goal: state.goal,
             level: state.level,
-            files: files // Passing the array of File objects directly
+            files: files.map(f => f.file) // Extract raw File objects for API
         });
 
         if (path) {
@@ -74,7 +90,7 @@ const CourseDetail = () => {
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <BrainCircuit size={24} className="text-blue-500" />
-                        Add Context (Optional)
+                        Add Context (Mandatory)
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                         Upload any relevant documents, notes, or previous work to help us tailor the course content to your specific needs.
@@ -87,18 +103,37 @@ const CourseDetail = () => {
                     />
                 </div>
 
-                <div className="flex justify-end gap-4">
+                {isGenerateDisabled && (
+                    <div className="flex justify-end mt-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-500 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-100 dark:border-amber-900/30">
+                            <Info size={12} />
+                            {files.length === 0
+                                ? "Please upload at least one file to proceed."
+                                : "Please wait for files to finish uploading."}
+                        </span>
+                    </div>
+                )}
+
+                <div className="flex justify-end gap-4 items-center mt-6">
                     <button
                         onClick={() => navigate('/')}
-                        className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                        className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm hover:shadow"
                     >
                         Back
                     </button>
                     <button
                         onClick={handleGenerate}
-                        className="px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                        disabled={isGenerateDisabled}
+                        className={`
+                            px-6 py-3 rounded-lg font-semibold text-white shadow-lg transition-all transform flex items-center gap-2
+                            ${isGenerateDisabled
+                                ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70 shadow-none'
+                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:-translate-y-0.5 cursor-pointer'
+                            }
+                        `}
                     >
-                        Generate Path
+                        {geminiLoading ? 'Generating...' : 'Generate Path'}
+                        {!geminiLoading && <BrainCircuit size={18} />}
                     </button>
                 </div>
             </div>

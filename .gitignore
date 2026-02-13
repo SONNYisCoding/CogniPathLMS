@@ -2,22 +2,25 @@
 .env
 .env.local
 .env.*.local
+*.env
 
 # Thư mục ảo Python
-venv/
-env/
 __pycache__/
 *.py[cod]
 
 # File rác hệ thống
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Cấu hình IDE
 .vscode/
-.idea/
 *.swp
+*.swo
 
 # Các file quyền truy cập nhạy cảm
 serviceAccountKey.json
 *.pem
+*.key
+*.cert

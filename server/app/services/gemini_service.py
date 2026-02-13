@@ -139,17 +139,25 @@ def generate_path(profile, files=None):
         print(f"Error generating path: {e}")
         return {"error": str(e)}
 
-def generate_lesson_content(topic, description, user_goal):
+def generate_lesson_content(topic, description, user_goal, feedback=None):
     """
     Generates detailed markdown lesson content using Gemini 1.5 Pro.
     """
     try:
         from app.prompts.system_prompts import LESSON_GENERATOR_PROMPT
         
+        feedback_text = ""
+        if feedback and isinstance(feedback, list) and len(feedback) > 0:
+            feedback_text = f"\n\nIMPORTANT ADJUSTMENTS BASED ON USER FEEDBACK:\nThe user requested regeneration because:\n"
+            for item in feedback:
+                feedback_text += f"- {item}\n"
+            feedback_text += "You MUST specifically address these issues in the new content."
+
         prompt = f"""
         Topic: {topic}
         Description: {description}
         User Context/Goal: {user_goal}
+        {feedback_text}
         
         Write the full lesson content now.
         """

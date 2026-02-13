@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
 import type { UserProfile } from '../types/models';
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [firebaseUser, loading] = useAuthState(auth);
     const [user, setUser] = useState<UserProfile | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (firebaseUser) {
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const logout = async () => {
         try {
             await signOut(auth);
+            navigate('/');
         } catch (error) {
             console.error("Error signing out", error);
         }

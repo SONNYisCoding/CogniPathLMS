@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGemini } from '../hooks/useGemini';
-import { Plus, Clock, GraduationCap } from 'lucide-react';
+import { Plus, Clock, GraduationCap, Trash } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import type { PersonalizedPath } from '../types/gemini';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 interface PathWithMeta extends PersonalizedPath {
     id: string;
@@ -14,20 +15,11 @@ interface PathWithMeta extends PersonalizedPath {
 
 const Dashboard = () => {
     const { user } = useAuth();
-    // Move getUserPaths directly into component scope to avoid dependency issues if not wrapped in useCallback
-    // But since useGemini returns stable functions (hopefully), it acts like a custom hook. 
-    // Wait, useGemini creates functions on every render in the previous implementation.
-    // I should fix useGemini to use useCallback or just rely on useEffect dependency array.
-    // user is stable from context.
-
-    // Actually, in the previous step I implemented `useGemini` returning functions directly. 
-    // They are re-created on every render.
-    // Let's wrapping the fetching logic inside useEffect without depending on `getUserPaths` function directly, 
-    // OR just disable the exhaustive-deps rule for this line if needed, but better to fix `useGemini` later.
-    // For now, let's assume standard usage.
-
-    const { getUserPaths, loading } = useGemini();
+    const { getUserPaths, deletePath, loading } = useGemini();
     const [paths, setPaths] = useState<PathWithMeta[]>([]);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [pathToDelete, setPathToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -35,11 +27,14 @@ const Dashboard = () => {
 
         const fetchPaths = async () => {
             if (user?.uid) {
-                // getUserPaths is async
-                const userPaths = await getUserPaths(user.uid);
-                if (isMounted) {
-                    // @ts-ignore - fixing type mismatch gracefully
-                    setPaths(userPaths);
+                try {
+                    const userPaths = await getUserPaths(user.uid);
+                    if (isMounted) {
+                        // @ts-ignore
+                        setPaths(userPaths);
+                    }
+                } catch (error) {
+                    console.error("Error fetching paths:", error);
                 }
             }
         };
@@ -48,7 +43,34 @@ const Dashboard = () => {
 
         return () => { isMounted = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]); // Removed getUserPaths dependency to avoid infinite loop if it's not memoized
+    }, [user]);
+
+    const handleDeleteClick = (e: React.MouseEvent, pathId: string) => {
+        e.stopPropagation(); // Prevent navigation
+        setPathToDelete(pathId);
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!user?.uid || !pathToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const success = await deletePath(pathToDelete, user.uid);
+            if (success) {
+                setPaths(prev => prev.filter(p => p.id !== pathToDelete));
+                setDeleteModalOpen(false);
+                setPathToDelete(null);
+            } else {
+                alert("Failed to delete path. Please try again.");
+            }
+        } catch (error) {
+            console.error("Delete failed:", error);
+            alert("An error occurred while deleting.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     if (loading && paths.length === 0) {
         return <LoadingSpinner fullScreen />;
@@ -94,7 +116,6 @@ const Dashboard = () => {
                             <div
                                 key={path.id}
                                 onClick={() => {
-                                    console.log("Navigating to path:", path.id, "User:", user?.uid);
                                     if (user?.uid) {
                                         navigate(`/path/${user.uid}/${path.id}`, { state: { path } });
                                     } else {
@@ -107,11 +128,20 @@ const Dashboard = () => {
                                     <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                         <GraduationCap size={24} />
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-xs text-xs font-medium px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                            {path.level || 'Beginner'}
-                                        </span>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center justify-end gap-1">
+                                    <div className="text-right flex flex-col items-end gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                                {path.level || 'Beginner'}
+                                            </span>
+                                            <button
+                                                onClick={(e) => handleDeleteClick(e, path.id)}
+                                                className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                title="Delete Path"
+                                            >
+                                                <Trash size={14} />
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-end gap-1">
                                             <Clock size={12} />
                                             {path.createdAt ? new Date(path.createdAt).toLocaleDateString() : 'Recent'}
                                         </p>
@@ -142,6 +172,16 @@ const Dashboard = () => {
                         ))}
                     </div>
                 )}
+
+                <ConfirmModal
+                    isOpen={deleteModalOpen}
+                    onClose={() => setDeleteModalOpen(false)}
+                    onConfirm={confirmDelete}
+                    title="Delete Learning Path?"
+                    message="Are you sure you want to delete this learning path? This action cannot be undone and all progress will be lost."
+                    confirmText="Delete Path"
+                    isLoading={isDeleting}
+                />
             </div>
         </PageWrapper>
     );

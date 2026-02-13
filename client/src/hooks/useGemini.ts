@@ -219,6 +219,42 @@ export const useGemini = () => {
         }
     };
 
+    const deletePath = async (pathId: string, userId: string): Promise<boolean> => {
+        setLoading(true);
+        try {
+            await axiosClient.delete(`/paths/${pathId}`, {
+                params: { userId }
+            });
+            return true;
+        } catch (err: any) {
+            console.error("Error deleting path:", err);
+            setError(err.message || "Failed to delete path");
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const regenerateLesson = async (pathId: string, moduleId: string, topic: string, description: string, userGoal: string, userId: string, feedback: string[]): Promise<string> => {
+        setLoading(true);
+        try {
+            const response = await axiosClient.post(`/modules/${moduleId}/regenerate`, {
+                topic,
+                description,
+                userGoal,
+                feedback,
+                pathId,
+                userId
+            });
+            return response.data.content;
+        } catch (err: any) {
+            console.error("Error regenerating lesson:", err);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         generatePath,
         savePathToFirestore,
@@ -227,6 +263,8 @@ export const useGemini = () => {
         getModule,
         saveModule,
         generateLesson,
+        regenerateLesson,
+        deletePath,
         contextChat,
         saveMessageToFirestore,
         getMessagesFromFirestore,

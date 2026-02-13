@@ -10,16 +10,12 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-      headers: {
-        // Dòng này cho phép trang web giao tiếp với Popup (Google Login)
-        // "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-        
-        // Setting this to 'unsafe-none' ensures compatibility with Google Picker & GAPI
-        "Cross-Origin-Opener-Policy": "unsafe-none",        
-        
-        // Nếu vẫn lỗi, thử thêm dòng này (tùy chọn):
-        "Cross-Origin-Embedder-Policy": "unsafe-none" 
-      },
-      port: 5173, 
+    headers: {
+
+      "Cross-Origin-Opener-Policy": "unsafe-none",
+
+      "Cross-Origin-Embedder-Policy": "unsafe-none"
     },
+    port: 5173,
+  },
 })

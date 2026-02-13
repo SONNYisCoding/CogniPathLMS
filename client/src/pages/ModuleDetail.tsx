@@ -3,20 +3,21 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css'; // Ensure you have this or add via index.html/css
+import 'katex/dist/katex.min.css';
 import { useGemini } from '../hooks/useGemini';
 import { useAuth } from '../context/AuthContext';
 import type { PersonalizedPath, ModuleData, ChatMessage } from '../types/gemini';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { ArrowLeft, ArrowRight, Send, Bot, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Bot, BookOpen, RefreshCw } from 'lucide-react';
 import ResizableLayout from '../components/layout/ResizableLayout';
+import RegenerateModal from '../components/common/RegenerateModal';
 
 const ModuleDetail = () => {
     const { pathId, moduleId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
-    const { getPath, getModule, saveModule, generateLesson, contextChat, saveMessageToFirestore, getMessagesFromFirestore } = useGemini();
+    const { getPath, getModule, saveModule, generateLesson, regenerateLesson, contextChat, saveMessageToFirestore, getMessagesFromFirestore } = useGemini();
 
     const [path, setPath] = useState<PersonalizedPath | null>(location.state?.path || null);
     const [moduleData, setModuleData] = useState<ModuleData | null>(null);
@@ -28,6 +29,7 @@ const ModuleDetail = () => {
     const [chatInput, setChatInput] = useState('');
     const [chatLoading, setChatLoading] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
 
     // Initial Fetch
     useEffect(() => {
@@ -108,6 +110,48 @@ const ModuleDetail = () => {
         }
     };
 
+    const handleRegenerateConfirm = async (feedback: string[]) => {
+        if (!path || !moduleId || !user || !pathId) return;
+
+        const currentModule = path.modules.find(m => m.id === moduleId);
+        if (!currentModule) return;
+
+        setGenerating(true);
+        setIsRegenerateModalOpen(false); // Close modal
+
+        try {
+            // New regenerate call with feedback
+            const content = await regenerateLesson(
+                pathId,
+                moduleId,
+                currentModule.title,
+                currentModule.description,
+                path.overallGoal,
+                user.uid,
+                feedback
+            );
+
+            const newModuleData: ModuleData = {
+                id: moduleId,
+                content,
+                status: 'in_progress',
+                lastAccessed: new Date().toISOString()
+            };
+
+            await saveModule(user.uid, pathId, newModuleData);
+            setModuleData(newModuleData);
+
+            // Clear chat messages locally
+            setMessages([]);
+
+        } catch (err) {
+            console.error("Failed to regenerate:", err);
+            alert("Failed to regenerate lesson content. Please try again.");
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!chatInput.trim() || chatLoading) return;
@@ -169,9 +213,30 @@ const ModuleDetail = () => {
                             </div>
                             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{currentModule.title}</h1>
                         </div>
-                        <button onClick={() => navigate(`/path/${pathId}`)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">
-                            Back to Map
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => navigate(`/path/${pathId}`)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition w-full sm:w-auto"
+                            >
+                                <ArrowLeft size={16} />
+                                Back to Map
+                            </button>
+
+                            {moduleData?.content && (
+                                <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-1"></div>
+                            )}
+
+                            {moduleData?.content && (
+                                <button
+                                    onClick={() => setIsRegenerateModalOpen(true)}
+                                    disabled={generating}
+                                    title="Regenerate Lesson"
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                >
+                                    <RefreshCw size={18} className={generating ? "animate-spin" : ""} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Scrollable Content */}
@@ -230,6 +295,13 @@ const ModuleDetail = () => {
                             )}
                         </div>
                     </div>
+
+                    <RegenerateModal
+                        isOpen={isRegenerateModalOpen}
+                        onClose={() => setIsRegenerateModalOpen(false)}
+                        onConfirm={handleRegenerateConfirm}
+                        isLoading={generating}
+                    />
 
                     {/* Footer Navigation */}
                     <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
