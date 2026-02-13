@@ -2,13 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// Sử dụng biến môi trường thay vì ghi cứng
 const firebaseConfig = {
-    apiKey: "AIzaSyDXyFCb3pakPporp1fXA2nGg_sM9FlrOMQ",
-    authDomain: "cognipath-c16ea.firebaseapp.com",
-    projectId: "cognipath-c16ea",
-    storageBucket: "cognipath-c16ea.firebasestorage.app",
-    messagingSenderId: "270604373816",
-    appId: "1:270604373816:web:9ac438c62350438e2f7bcd"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
