@@ -23,7 +23,7 @@ jobs:
           gcloud run deploy cognipath-backend \
             --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend \
             --platform managed --region asia-southeast1 --allow-unauthenticated \
-            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }},GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
           
           # Get the URL of the deployed service
           URL=$(gcloud run services describe cognipath-backend --platform managed --region asia-southeast1 --format='value(status.url)')
