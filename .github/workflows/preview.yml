@@ -32,12 +32,12 @@ jobs:
       - name: Build & Deploy Frontend Preview
         id: firebase_preview
         run: |
-        run: |
           cd client
           npm install
           # Truyền biến vào quá trình build
           npm run build
         env:
+          VITE_API_URL: ${{ env.BACKEND_URL }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}

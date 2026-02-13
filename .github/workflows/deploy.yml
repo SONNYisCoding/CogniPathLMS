@@ -16,6 +16,19 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
+      - name: Deploy Backend to Cloud Run
+        id: deploy-backend
+        run: |
+          gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend ./server
+          gcloud run deploy cognipath-backend \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend \
+            --platform managed --region asia-southeast1 --allow-unauthenticated \
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}
+          
+          # Get the URL of the deployed service
+          URL=$(gcloud run services describe cognipath-backend --platform managed --region asia-southeast1 --format='value(status.url)')
+          echo "BACKEND_URL=$URL/api" >> $GITHUB_ENV
+
       - name: Build Frontend
         run: |
           cd client
@@ -23,22 +36,13 @@ jobs:
           # Truyền biến vào quá trình build
           npm run build
         env:
+          VITE_API_URL: ${{ env.BACKEND_URL }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-        #
-
-      - name: Deploy Backend to Cloud Run
-        run: |
-          gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend ./server
-          gcloud run deploy cognipath-backend \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/cognipath-backend \
-            --platform managed --region asia-southeast1 --allow-unauthenticated \
-            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}
-        #
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
