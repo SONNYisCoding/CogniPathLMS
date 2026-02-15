@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# BỔ SUNG: Cấp quyền để Firebase Action có thể comment và tạo checks trên PR
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write    
+
 jobs:
   preview:
     runs-on: ubuntu-latest
