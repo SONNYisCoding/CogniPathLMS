@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
+    const { user, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
     const [goal, setGoal] = useState('');
     const [level, setLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
@@ -51,12 +53,22 @@ const Home = () => {
                         </select>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
-                    >
-                        Create Learning Path
-                    </button>
+                    {user ? (
+                        <button
+                            type="submit"
+                            className="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+                        >
+                            Create Learning Path
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={loginWithGoogle}
+                            className="w-full py-3 mt-4 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                            <span className="text-lg">🔒</span> Sign in to Start Journey
+                        </button>
+                    )}
                 </form>
             </div>
         </PageWrapper>

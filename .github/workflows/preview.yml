@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# BỔ SUNG: Cấp quyền để Firebase Action có thể comment và tạo checks trên PR
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write    
+
 jobs:
   preview:
     runs-on: ubuntu-latest
@@ -25,7 +31,8 @@ jobs:
             --platform managed --region asia-southeast1 --no-traffic --tag $PR_TAG \
             --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }},GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
           
-          URL=$(gcloud run services describe cognipath-backend --platform managed --region asia-southeast1 --format="value(status.traffic.filter(tag='$PR_TAG').url)")
+          # Sửa lỗi: Sử dụng jq để trích xuất URL của tag chính xác và an toàn hơn
+          URL=$(gcloud run services describe cognipath-backend --platform managed --region asia-southeast1 --format='json' | jq -r ".status.traffic[] | select(.tag==\"$PR_TAG\") | .url")
           echo "BACKEND_URL=$URL" >> $GITHUB_ENV
         #
 
