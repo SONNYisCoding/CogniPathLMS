@@ -10,72 +10,95 @@ CogniPath is an innovative EdTech startup project designed to revolutionize how 
   <img src="assets/image.png" width="1920" alt="CogniPath Logo">
 </p>
 
-## ✨ Key Features
-**AI-Generated Roadmaps**: Instantly create structured learning paths for any topic using Gemini Pro 3.0.
+## ✨ Key Capabilities
+- **🧠 Intelligent Roadmap Architect**: Instantly generates structured curricula tailored to specific user goals and current knowledge levels.
+- **💬 Socratic AI Tutor**: A context-aware assistant that understands both the lesson content and the user's uploaded source materials.
+- **📂 Multimodal Context Integration**: Native support for PDF, DOCX, and Google Drive for a truly document-grounded learning experience.
+- **🎨 Premium UI/UX**: A modern, glassmorphic split-pane workspace designed for deep focus and seamless interaction.
 
-**Context-Aware Tutor**: Chat with an AI assistant that understands your specific learning module and uploaded materials.
+---
 
-**Multi-Source Integration**: Support for PDF, DOCX, and Google Drive file uploads to enhance the learning context.
+## 🧭 "Kim Chỉ Nam" - Documentation Hub
+We maintain a strict "Source of Truth" for every aspect of the project:
 
-**Dynamic UI**: A modern, resizable split-pane interface for seamless switching between content reading and AI interaction.
+- [ ] **[Workflows Master](docs/Workflows_Master.md)**: Detailed business logic and technical flows.
+- [ ] **[Schema Dictionary](docs/Schema_Dictionary.md)**: Standardized data models across Full-stack.
+- [ ] **[Project Structure](docs/Project_Structure.md)**: Architectural map of the codebase.
+- [ ] **[User Guide](docs/User_Guide.md)**: Comprehensive manual for end-users.
 
-**Enterprise-Grade Deployment**: Scalable architecture hosted on Google Cloud Run and Firebase.
+---
 
-## 🛠️ Tech Stack
-**Frontend**: ReactJS, Vite, Tailwind CSS, Lucide Icons.
+## 🏗️ System Architecture
+CogniPath is built on a scalable, modular architecture optimized for production:
 
-**Backend**: Python, Flask, Gunicorn.
+- **Frontend**: High-performance SPA built with **React & Vite**, styled with **Tailwind CSS**.
+- **Backend**: **Python Flask** API serving as the orchestration layer for AI services.
+- **AI Engine**: Powered by **Google Gemini API** for reasoning and content generation.
+- **Persistence**: **Firestore** for real-time document sync and **Firebase Auth** for identity.
+- **Deployment**: Containerized via **Docker** and hosted on **Google Cloud Run**.
 
-**AI Engine**: Google Generative AI (Gemini API).
+---
 
-**Cloud & Infrastructure**:
+## 📂 Project Structure
+A high-level overview of how CogniPath is organized:
 
-**Authentication & Hosting**: Firebase.
+```text
+cognipath_lms/
+├── client/           # Frontend: React, Vite, Tailwind CSS
+│   ├── src/api/      # API configurations
+│   ├── src/hooks/    # Core business logic (Gemini, Upload)
+│   └── src/pages/    # Main UI views (Workspace, Dashboard)
+├── server/           # Backend: Python Flask, Gemini SDK
+│   ├── app/routes/   # API endpoints definition
+│   └── app/services/ # AI processing & logic layer
+├── docs/             # "Kim Chỉ Nam" (Source of Truth docs)
+├── assets/           # Project visuals & logos
+└── firebase.json     # Hosting & Infrastructure config
+```
+*For a detailed breakdown, see [Project_Structure.md](docs/Project_Structure.md).*
 
-**Serverless Execution**: Google Cloud Run.
+---
 
-**APIs**: Google Picker API, Google Drive API.
+## 🛠️ Technical Setup
 
-## 🚀 Getting Started
 ### 1. Prerequisites
-Node.js (v18+)
+- Node.js (v18+) & Python 3.9+
+- Google Cloud Project with Gemini API access.
 
-Python 3.9+
-
-Google Cloud Project with billing enabled (Blaze plan).
-
-### 2. Installation
-Bash
-**Clone the repository**
+### 2. Quick Installation
+```bash
+# Clone the repository
 git clone https://github.com/your-username/cognipath.git
 cd cognipath
 
-**Setup Frontend**
+# Setup Frontend
 cd client && npm install
 
-**Setup Backend**
+# Setup Backend
 cd ../server
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
 
-### 3. Environment Variables
-Create a .env file in both client/ and server/ directories. Refer to .env.example for the required keys:
+### 3. Environment Config
+Create `.env` files in both `client/` and `server/` following the standards in `Schema_Dictionary.md`.
 
-**GOOGLE_API_KEY**: Your Gemini API Key.
+---
 
-**VITE_GOOGLE_CLIENT_ID**: OAuth 2.0 Client ID for Drive integration.
+## 📅 Future Roadmap: CogniPath NextGen
+We are currently in the process of upgrading to a **Multimodal Agentic RAG** architecture:
+- [ ] Transition to **Next.js 14 (App Router)** & **FastAPI**.
+- [ ] Implementation of **Qdrant Vector Database** for large-scale document retrieval.
+- [ ] **Multi-Agent Specialist System** (Researcher, Ingestor, Planner).
+- [ ] See full [NextGen Implementation Plan](docs/Implementation_Plan_NextGen.md).
 
-## 🌍 Deployment
-This project is optimized for the Google Cloud Ecosystem:
+---
 
-**Backend**: Containerized via Docker and deployed to Cloud Run.
+## 👨‍💻 Core Team
+**Minh Triet Nguyen**  
+*Chapter Lead, GDGoC FPT University HCMC*  
+*AI Student @ FPT University*
 
-**Frontend**: Built with Vite and served via Firebase Hosting.
-
-## 👨‍💻 Author
-**Minh Triet Nguyen** Chapter Lead, GDGoC FPT University HCMC
-
-AI Student @ FPT University
-
-[def]: image.png
+---
+<p align="center">© 2026 CogniPath Project - Built with "Premium & WOW" Philosophy</p>
