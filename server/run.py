@@ -16,11 +16,11 @@ app.register_blueprint(agent_bp, url_prefix='/api')
 
 if __name__ == '__main__':
     # Lấy cổng từ biến môi trường của local, mặc định là 5000
-    # port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5000))
 
     # Cloud Run sẽ tự động truyền biến PORT, mặc định là 8080
-    port = int(os.environ.get("PORT", 8080))
+    # port = int(os.environ.get("PORT", 8080))
 
     # Tắt debug=True để đảm bảo hiệu suất và bảo mật trên môi trường Live
-    # app.run(debug=True, host='0.0.0.0', port=port)
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=port)
+    # app.run(debug=False, host='0.0.0.0', port=port)
