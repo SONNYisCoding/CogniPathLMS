@@ -18,7 +18,7 @@ CogniPath is an innovative EdTech startup project designed to revolutionize how 
 
 ---
 
-## 🧭 "Kim Chỉ Nam" - Documentation Hub
+## 🧭 Documentation Hub
 We maintain a strict "Source of Truth" for every aspect of the project:
 
 - [ ] **[Workflows Master](docs/Workflows_Master.md)**: Detailed business logic and technical flows.
